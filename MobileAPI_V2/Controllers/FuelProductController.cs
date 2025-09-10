@@ -45,33 +45,27 @@ namespace MobileAPI_V2.Controllers
 
                 else
                 {
-                    mobile_no = mobile_no.Replace(" ", "+");
-                    mobile_no = ApiEncrypt_Decrypt.DecryptString(AESKEY, mobile_no);
                     bpcl_wallet_request bpcl_Request = new()
                     {
-                        mobile_no = mobile_no
+                        mobile_no = ApiEncrypt_Decrypt.DecryptString(AESKEY, mobile_no.Replace(" ", "+")),
                     };
                     DataSet dataSet = bpcl_Request.get_wallet_balance();
-                    if (dataSet != null)
+                    if (dataSet?.Tables.Count > 0 && dataSet.Tables[0].Rows.Count > 0)
                     {
-                        if (dataSet.Tables[0].Rows.Count > 0)
+                        DataRow row = dataSet.Tables[0].Rows[0];
+
+                        if (row["Status"]?.ToString() == "1")
                         {
-                            if (dataSet.Tables[0].Rows[0]["Status"].ToString() == "1")
-                            {
-                                bpcl_Response.balance = decimal.Parse(dataSet.Tables[0].Rows[0]["balance"].ToString()??"0");
-
-                                res.Status = 1;
-                                res.result = bpcl_Response;
-                            }
-                            else
-                            {
-
-                                bpcl_Response.balance = 0;
-                                res.Status = 0;
-                            }
+                            bpcl_Response.balance = decimal.TryParse(row["balance"]?.ToString(), out var bal) ? bal : 0;
+                            res.Status = 1;
+                            res.result = bpcl_Response;
+                        }
+                        else
+                        {
+                            bpcl_Response.balance = 0;
+                            res.Status = 0;
                         }
                     }
-
                 }
             }
             catch (Exception ex)
@@ -119,54 +113,42 @@ namespace MobileAPI_V2.Controllers
                 }
                 else
                 {
-                    mobile_no = mobile_no.Replace(" ", "+");
-                    mobile_no = ApiEncrypt_Decrypt.DecryptString(AESKEY, mobile_no);
-                    page = page.Replace(" ", "+");
-                    page = ApiEncrypt_Decrypt.DecryptString(AESKEY, page);
-
                     bpcl_transaction_request bpcl_transaction_request = new()
                     {
-                        mobile_no = mobile_no,
-                        page = int.Parse(page)
+                        mobile_no = ApiEncrypt_Decrypt.DecryptString(AESKEY, mobile_no.Replace(" ", "+")),
+                        page = int.Parse(ApiEncrypt_Decrypt.DecryptString(AESKEY, page.Replace(" ", "+")))
                     };
                     DataSet dataSet = bpcl_transaction_request.get_bpcl_transaction();
-                    if (dataSet != null)
+                    if (dataSet?.Tables.Count > 0 && dataSet.Tables[0].Rows.Count > 0)
                     {
-                        if (dataSet.Tables[0].Rows.Count > 0)
+                        DataTable table = dataSet.Tables[0];
+                        DataRow firstRow = table.Rows[0];
+                        if (firstRow["Status"]?.ToString() == "1")
                         {
-                            if (dataSet.Tables[0].Rows[0]["Status"].ToString() == "1")
+                            var lstbpcldata = table.AsEnumerable().Select(row => new bpcl_trans_data
                             {
-
-                                List<bpcl_trans_data> lstbpcldata = [];
-                                for (int k = 0; k <= dataSet.Tables[0].Rows.Count - 1; k++)
-                                {
-                                    bpcl_trans_data bpcl_trans_data = new()
-                                    {
-                                        trans_id = dataSet.Tables[0].Rows[k]["trans_id"].ToString(),
-                                        amount = decimal.Parse(dataSet.Tables[0].Rows[k]["amount"].ToString()??"0"),
-                                        narration = dataSet.Tables[0].Rows[k]["narration"].ToString(),
-                                        tran_date = dataSet.Tables[0].Rows[k]["tran_date"].ToString(),
-                                        trans_type = dataSet.Tables[0].Rows[k]["trans_type"].ToString()
-                                    };
-
-                                    lstbpcldata.Add(bpcl_trans_data);
-                                }
-                                bpcl_trnasaction_response.transaction_lst = lstbpcldata;
-                                bpcl_trnasaction_response.total_record = Int64.Parse(dataSet.Tables[0].Rows[0]["total_record"].ToString() ?? "0");
-                                res.Status = 1;
-                                res.result = bpcl_trnasaction_response;
-                            }
-                            else
+                                trans_id = row["trans_id"]?.ToString(),
+                                amount = decimal.TryParse(row["amount"]?.ToString(), out var amt) ? amt : 0,
+                                narration = row["narration"]?.ToString(),
+                                tran_date = row["tran_date"]?.ToString(),
+                                trans_type = row["trans_type"]?.ToString()
+                            }).ToList();
+                            bpcl_trnasaction_response.transaction_lst = lstbpcldata;
+                            bpcl_trnasaction_response.total_record = long.TryParse(firstRow["total_record"]?.ToString(), out var total) ? total : 0;
+                            res.Status = 1;
+                            res.result = bpcl_trnasaction_response;
+                        }
+                        else
+                        {
+                            res.Status = int.TryParse(firstRow["Status"]?.ToString(), out var status) ? status : 0;
+                            res.result = new bpcl_trnasaction_response
                             {
-                               res.Status = int.Parse(dataSet.Tables[0].Rows[0]["Status"].ToString() ?? "0");
-                               res.result = new bpcl_trnasaction_response
-                                {
-                                    transaction_lst = [],
-                                    total_record = 0
-                                };
-                            }
+                                transaction_lst = new List<bpcl_trans_data>(),
+                                total_record = 0
+                            };
                         }
                     }
+
 
                 }
             }
