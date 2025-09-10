@@ -60,9 +60,10 @@ namespace MobileAPI_V2.Controllers
                             }
                             else
                             {
-
                                 bpcl_Response.balance = 0;
                                 res.Status = 0;
+                                res.result = new bpcl_wallet_response(); 
+
                             }
                         }
                     }
@@ -73,6 +74,8 @@ namespace MobileAPI_V2.Controllers
             {
                 _logwrite.LogException(ex);
                 res.Status = 0;
+                bpcl_Response.balance = 0;
+                res.result = new bpcl_wallet_response();
                 res.message = ex.Message;
             }
             string CustData = "";
@@ -93,7 +96,7 @@ namespace MobileAPI_V2.Controllers
 
         }
         [HttpGet("bpcl_transaction")]
-        public async Task<ResponseModel> bpcl_transaction(string mobile_no,string page)
+        public async Task<ResponseModel> bpcl_transaction(string mobile_no, string page)
         {
             _log.WriteToFile("bpcl_transaction Process Started");
             string EncryptedText = "";
@@ -121,7 +124,7 @@ namespace MobileAPI_V2.Controllers
 
                     bpcl_transaction_request bpcl_transaction_request = new bpcl_transaction_request();
                     bpcl_transaction_request.mobile_no = mobile_no;
-                    bpcl_transaction_request.page =int.Parse(page);
+                    bpcl_transaction_request.page = int.Parse(page);
                     DataSet dataSet = bpcl_transaction_request.get_bpcl_transaction();
                     if (dataSet != null)
                     {
@@ -138,7 +141,7 @@ namespace MobileAPI_V2.Controllers
                                     bpcl_trans_data.narration = dataSet.Tables[0].Rows[k]["narration"].ToString();
                                     bpcl_trans_data.tran_date = dataSet.Tables[0].Rows[k]["tran_date"].ToString();
                                     bpcl_trans_data.trans_type = dataSet.Tables[0].Rows[k]["trans_type"].ToString();
-                                    
+
                                     lstbpcldata.Add(bpcl_trans_data);
                                 }
                                 bpcl_trnasaction_response.transaction_lst = lstbpcldata;
@@ -148,7 +151,13 @@ namespace MobileAPI_V2.Controllers
                             }
                             else
                             {
-                               res.Status = int.Parse(dataSet.Tables[0].Rows[0]["Status"].ToString());
+                                res.Status = 0;
+                                res.message = "No record found";
+                                res.result = new bpcl_trnasaction_response
+                                {
+                                    transaction_lst = new List<bpcl_trans_data>(),
+                                    total_record = 0
+                                };
                             }
                         }
                     }
@@ -160,6 +169,11 @@ namespace MobileAPI_V2.Controllers
                 _logwrite.LogException(ex);
                 res.Status = 0;
                 res.message = ex.Message;
+                res.result = new bpcl_trnasaction_response
+                {
+                    transaction_lst = new List<bpcl_trans_data>(),
+                    total_record = 0
+                };
             }
             string CustData = "";
             DataContractJsonSerializer js;
