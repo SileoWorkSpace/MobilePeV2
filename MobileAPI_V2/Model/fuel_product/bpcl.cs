@@ -35,13 +35,15 @@ namespace MobileAPI_V2.Model.fuel_product
     public class bpcl_transaction_request
     {
         public string? mobile_no { get; set; }
+        public int? page { get; set; }
 
         public DataSet get_bpcl_transaction()
         {
             try
             {
                 SqlParameter[] para = {
-                                      new SqlParameter("@mobile_no", mobile_no)
+                                      new SqlParameter("@mobile_no", mobile_no),
+                                      new SqlParameter("@page", page),
 
                                   };
 
@@ -58,7 +60,8 @@ namespace MobileAPI_V2.Model.fuel_product
     }
     public class bpcl_trnasaction_response
     {
-        public List<bpcl_trans_data> transaction_lst { get; set; }
+        public List<bpcl_trans_data>? transaction_lst { get; set; }
+        public Int64? total_record { get; set; }
     }
     public class bpcl_trans_data
     {

@@ -93,7 +93,7 @@ namespace MobileAPI_V2.Controllers
 
         }
         [HttpGet("bpcl_transaction")]
-        public async Task<ResponseModel> bpcl_transaction(string mobile_no)
+        public async Task<ResponseModel> bpcl_transaction(string mobile_no,string page)
         {
             _log.WriteToFile("bpcl_transaction Process Started");
             string EncryptedText = "";
@@ -107,14 +107,21 @@ namespace MobileAPI_V2.Controllers
                     res.message = "Please pass Mobile No";
                     res.Status = 0;
                 }
-
+                if (string.IsNullOrEmpty(page))
+                {
+                    res.message = "Please pass page no";
+                    res.Status = 0;
+                }
                 else
                 {
                     mobile_no = mobile_no.Replace(" ", "+");
                     mobile_no = ApiEncrypt_Decrypt.DecryptString(AESKEY, mobile_no);
+                    page = page.Replace(" ", "+");
+                    page = ApiEncrypt_Decrypt.DecryptString(AESKEY, page);
 
                     bpcl_transaction_request bpcl_transaction_request = new bpcl_transaction_request();
                     bpcl_transaction_request.mobile_no = mobile_no;
+                    bpcl_transaction_request.page =int.Parse(page);
                     DataSet dataSet = bpcl_transaction_request.get_bpcl_transaction();
                     if (dataSet != null)
                     {
@@ -131,9 +138,11 @@ namespace MobileAPI_V2.Controllers
                                     bpcl_trans_data.narration = dataSet.Tables[0].Rows[k]["narration"].ToString();
                                     bpcl_trans_data.tran_date = dataSet.Tables[0].Rows[k]["tran_date"].ToString();
                                     bpcl_trans_data.trans_type = dataSet.Tables[0].Rows[k]["trans_type"].ToString();
+                                    
                                     lstbpcldata.Add(bpcl_trans_data);
                                 }
                                 bpcl_trnasaction_response.transaction_lst = lstbpcldata;
+                                bpcl_trnasaction_response.total_record = Int64.Parse(dataSet.Tables[0].Rows[0]["total_record"].ToString());
                                 res.Status = 1;
                                 res.result = bpcl_trnasaction_response;
                             }
