@@ -8,6 +8,7 @@ using static MobileAPI_V2.Model.BillPayment.BillPaymentCommon;
 using System.Data;
 using System.Runtime.Serialization.Json;
 using MobileAPI_V2.Logs;
+using System.ComponentModel.DataAnnotations;
 
 namespace MobileAPI_V2.Controllers
 {
@@ -17,20 +18,23 @@ namespace MobileAPI_V2.Controllers
     {
         private readonly LogWrite _logwrite;
         private readonly Logger _log;
-        string AESKEY = new ConfigurationBuilder().AddJsonFile($"appsettings.json").Build().GetSection("AESKEY").Value;
+        private static readonly ConfigurationBuilder configurationBuilder = new();
+        private readonly string AESKEY;
         public FuelProductController()
         {
             _logwrite = new LogWrite();
             _log = new Logger();
+            var configuration = configurationBuilder.AddJsonFile($"appsettings.json").Build();
+            AESKEY = configuration.GetSection("AESKEY").Value ?? throw new InvalidOperationException("AESKEY is not configured in appsettings.json");
         }
         [HttpGet("bpcl_balance")]
-        public async Task<ResponseModel> bpcl_balance(string mobile_no)
+        public async Task<ResponseModel> BpclBalanceAsync([Required] string mobile_no)
         {
             _log.WriteToFile("bocl_wallet_balance Process Started");
-            string EncryptedText = "";
-            CommonResponseEcomm<bpcl_wallet_response> res = new CommonResponseEcomm<bpcl_wallet_response>();
-            ResponseModel returnResponse = new ResponseModel();
-            bpcl_wallet_response bpcl_Response = new bpcl_wallet_response();
+            string EncryptedText;
+            CommonResponseEcomm<bpcl_wallet_response> res = new();
+            ResponseModel returnResponse = new();
+            bpcl_wallet_response bpcl_Response = new();
             try
             {
                 if (string.IsNullOrEmpty(mobile_no))
@@ -43,9 +47,10 @@ namespace MobileAPI_V2.Controllers
                 {
                     mobile_no = mobile_no.Replace(" ", "+");
                     mobile_no = ApiEncrypt_Decrypt.DecryptString(AESKEY, mobile_no);
-
-                    bpcl_wallet_request bpcl_Request = new bpcl_wallet_request();
-                    bpcl_Request.mobile_no = mobile_no;
+                    bpcl_wallet_request bpcl_Request = new()
+                    {
+                        mobile_no = mobile_no
+                    };
                     DataSet dataSet = bpcl_Request.get_wallet_balance();
                     if (dataSet != null)
                     {
@@ -53,17 +58,16 @@ namespace MobileAPI_V2.Controllers
                         {
                             if (dataSet.Tables[0].Rows[0]["Status"].ToString() == "1")
                             {
-                                bpcl_Response.balance = decimal.Parse(dataSet.Tables[0].Rows[0]["balance"].ToString());
+                                bpcl_Response.balance = decimal.Parse(dataSet.Tables[0].Rows[0]["balance"].ToString()??"0");
 
                                 res.Status = 1;
                                 res.result = bpcl_Response;
                             }
                             else
                             {
+
                                 bpcl_Response.balance = 0;
                                 res.Status = 0;
-                                res.result = new bpcl_wallet_response(); 
-
                             }
                         }
                     }
@@ -74,11 +78,9 @@ namespace MobileAPI_V2.Controllers
             {
                 _logwrite.LogException(ex);
                 res.Status = 0;
-                bpcl_Response.balance = 0;
-                res.result = new bpcl_wallet_response();
                 res.message = ex.Message;
             }
-            string CustData = "";
+            string CustData;
             DataContractJsonSerializer js;
             MemoryStream ms;
             js = new DataContractJsonSerializer(typeof(CommonResponseEcomm<bpcl_wallet_response>));
@@ -86,7 +88,7 @@ namespace MobileAPI_V2.Controllers
             js.WriteObject(ms, res);
             ms.Position = 0;
             StreamReader sr = new StreamReader(ms);
-            CustData = sr.ReadToEnd();
+            CustData = await sr.ReadToEndAsync();
             sr.Close();
             ms.Close();
             EncryptedText = ApiEncrypt_Decrypt.EncryptString(AESKEY, CustData);
@@ -96,13 +98,13 @@ namespace MobileAPI_V2.Controllers
 
         }
         [HttpGet("bpcl_transaction")]
-        public async Task<ResponseModel> bpcl_transaction(string mobile_no, string page)
+        public async Task<ResponseModel> BpclTransactionAsync([Required] string mobile_no, [Required] string page)
         {
             _log.WriteToFile("bpcl_transaction Process Started");
-            string EncryptedText = "";
-            CommonResponseEcomm<bpcl_trnasaction_response> res = new CommonResponseEcomm<bpcl_trnasaction_response>();
-            ResponseModel returnResponse = new ResponseModel();
-            bpcl_trnasaction_response bpcl_trnasaction_response = new bpcl_trnasaction_response();
+            string EncryptedText;
+            CommonResponseEcomm<bpcl_trnasaction_response> res = new();
+            ResponseModel returnResponse = new();
+            bpcl_trnasaction_response bpcl_trnasaction_response = new();
             try
             {
                 if (string.IsNullOrEmpty(mobile_no))
@@ -122,9 +124,11 @@ namespace MobileAPI_V2.Controllers
                     page = page.Replace(" ", "+");
                     page = ApiEncrypt_Decrypt.DecryptString(AESKEY, page);
 
-                    bpcl_transaction_request bpcl_transaction_request = new bpcl_transaction_request();
-                    bpcl_transaction_request.mobile_no = mobile_no;
-                    bpcl_transaction_request.page = int.Parse(page);
+                    bpcl_transaction_request bpcl_transaction_request = new()
+                    {
+                        mobile_no = mobile_no,
+                        page = int.Parse(page)
+                    };
                     DataSet dataSet = bpcl_transaction_request.get_bpcl_transaction();
                     if (dataSet != null)
                     {
@@ -132,30 +136,32 @@ namespace MobileAPI_V2.Controllers
                         {
                             if (dataSet.Tables[0].Rows[0]["Status"].ToString() == "1")
                             {
-                                List<bpcl_trans_data> lstbpcldata = new List<bpcl_trans_data>();
+
+                                List<bpcl_trans_data> lstbpcldata = [];
                                 for (int k = 0; k <= dataSet.Tables[0].Rows.Count - 1; k++)
                                 {
-                                    bpcl_trans_data bpcl_trans_data = new bpcl_trans_data();
-                                    bpcl_trans_data.trans_id = dataSet.Tables[0].Rows[k]["trans_id"].ToString();
-                                    bpcl_trans_data.amount = decimal.Parse(dataSet.Tables[0].Rows[k]["amount"].ToString());
-                                    bpcl_trans_data.narration = dataSet.Tables[0].Rows[k]["narration"].ToString();
-                                    bpcl_trans_data.tran_date = dataSet.Tables[0].Rows[k]["tran_date"].ToString();
-                                    bpcl_trans_data.trans_type = dataSet.Tables[0].Rows[k]["trans_type"].ToString();
+                                    bpcl_trans_data bpcl_trans_data = new()
+                                    {
+                                        trans_id = dataSet.Tables[0].Rows[k]["trans_id"].ToString(),
+                                        amount = decimal.Parse(dataSet.Tables[0].Rows[k]["amount"].ToString()??"0"),
+                                        narration = dataSet.Tables[0].Rows[k]["narration"].ToString(),
+                                        tran_date = dataSet.Tables[0].Rows[k]["tran_date"].ToString(),
+                                        trans_type = dataSet.Tables[0].Rows[k]["trans_type"].ToString()
+                                    };
 
                                     lstbpcldata.Add(bpcl_trans_data);
                                 }
                                 bpcl_trnasaction_response.transaction_lst = lstbpcldata;
-                                bpcl_trnasaction_response.total_record = Int64.Parse(dataSet.Tables[0].Rows[0]["total_record"].ToString());
+                                bpcl_trnasaction_response.total_record = Int64.Parse(dataSet.Tables[0].Rows[0]["total_record"].ToString() ?? "0");
                                 res.Status = 1;
                                 res.result = bpcl_trnasaction_response;
                             }
                             else
                             {
-                                res.Status = 0;
-                                res.message = "No record found";
-                                res.result = new bpcl_trnasaction_response
+                               res.Status = int.Parse(dataSet.Tables[0].Rows[0]["Status"].ToString() ?? "0");
+                               res.result = new bpcl_trnasaction_response
                                 {
-                                    transaction_lst = new List<bpcl_trans_data>(),
+                                    transaction_lst = [],
                                     total_record = 0
                                 };
                             }
@@ -169,13 +175,8 @@ namespace MobileAPI_V2.Controllers
                 _logwrite.LogException(ex);
                 res.Status = 0;
                 res.message = ex.Message;
-                res.result = new bpcl_trnasaction_response
-                {
-                    transaction_lst = new List<bpcl_trans_data>(),
-                    total_record = 0
-                };
             }
-            string CustData = "";
+            string CustData;
             DataContractJsonSerializer js;
             MemoryStream ms;
             js = new DataContractJsonSerializer(typeof(CommonResponseEcomm<bpcl_trnasaction_response>));
@@ -183,7 +184,7 @@ namespace MobileAPI_V2.Controllers
             js.WriteObject(ms, res);
             ms.Position = 0;
             StreamReader sr = new StreamReader(ms);
-            CustData = sr.ReadToEnd();
+            CustData = await sr.ReadToEndAsync();
             sr.Close();
             ms.Close();
             EncryptedText = ApiEncrypt_Decrypt.EncryptString(AESKEY, CustData);

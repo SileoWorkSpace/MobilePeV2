@@ -155,11 +155,11 @@ namespace MobileAPI_V2.Model.BillPayment
     }
     public class ResponseModel
     {
-        public string Body { get; set; }
+        public string? Body { get; set; }
     }
     public class RequestModel
     {
-        public string Body { get; set; }
+        public string? Body { get; set; }
 
     }
     public class CouponBody
