@@ -139,7 +139,9 @@ namespace MobileAPI_V2.Controllers
                                 amount = decimal.TryParse(row["amount"]?.ToString(), out var amt) ? amt : 0,
                                 narration = row["narration"]?.ToString(),
                                 tran_date = row["tran_date"]?.ToString(),
-                                trans_type = row["trans_type"]?.ToString()
+                                trans_type = row["trans_type"]?.ToString(),
+                                fuel_station_location = row["fuel_station_location"]?.ToString(),
+                                fuel_station_city = row["fuel_station_city"]?.ToString()
                             }).ToList();
                             bpcl_trnasaction_response.transaction_lst = lstbpcldata;
                             bpcl_trnasaction_response.total_record = long.TryParse(firstRow["total_record"]?.ToString(), out var total) ? total : 0;
