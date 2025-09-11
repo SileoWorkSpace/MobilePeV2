@@ -31,18 +31,20 @@ namespace MobileAPI_V2.Controllers
         public async Task<ResponseModel> BpclBalanceAsync([Required] string mobile_no)
         {
             _log.WriteToFile("bocl_wallet_balance Process Started");
-            string EncryptedText;
-            CommonResponseEcomm<bpcl_wallet_response> res = new();
-            ResponseModel returnResponse = new();
-            bpcl_wallet_response bpcl_Response = new();
+            string EncryptedText = string.Empty;
+            var res = new CommonResponseEcomm<bpcl_wallet_response>();
+            var returnResponse = new ResponseModel();
+            var bpcl_Response = new bpcl_wallet_response();
             try
             {
                 if (string.IsNullOrEmpty(mobile_no))
                 {
-                    res.message = "Please pass Mobile No";
-                    res.Status = 0;
+                    res = new CommonResponseEcomm<bpcl_wallet_response>
+                    {
+                        message = "Please pass Mobile No",
+                        Status = 0
+                    };
                 }
-
                 else
                 {
                     bpcl_wallet_request bpcl_Request = new()
@@ -95,21 +97,27 @@ namespace MobileAPI_V2.Controllers
         public async Task<ResponseModel> BpclTransactionAsync([Required] string mobile_no, [Required] string page)
         {
             _log.WriteToFile("bpcl_transaction Process Started");
-            string EncryptedText;
-            CommonResponseEcomm<bpcl_trnasaction_response> res = new();
-            ResponseModel returnResponse = new();
-            bpcl_trnasaction_response bpcl_trnasaction_response = new();
+            string EncryptedText = string.Empty;
+            var res = new CommonResponseEcomm<bpcl_trnasaction_response>();
+            var returnResponse = new ResponseModel();
+            var bpcl_trnasaction_response = new bpcl_trnasaction_response();
             try
             {
                 if (string.IsNullOrEmpty(mobile_no))
                 {
-                    res.message = "Please pass Mobile No";
-                    res.Status = 0;
+                    res = new CommonResponseEcomm<bpcl_trnasaction_response>
+                    {
+                        message = "Please pass Mobile No",
+                        Status = 0
+                    };
                 }
                 if (string.IsNullOrEmpty(page))
                 {
-                    res.message = "Please pass page no";
-                    res.Status = 0;
+                    res = new CommonResponseEcomm<bpcl_trnasaction_response>
+                    {
+                        message = "Please pass page no",
+                        Status = 0
+                    };          
                 }
                 else
                 {
@@ -147,6 +155,15 @@ namespace MobileAPI_V2.Controllers
                                 total_record = 0
                             };
                         }
+                    }
+                    else
+                    {
+                        res.Status = 0;
+                        res.result = new bpcl_trnasaction_response
+                        {
+                            transaction_lst = new List<bpcl_trans_data>(),
+                            total_record = 0
+                        };
                     }
 
 

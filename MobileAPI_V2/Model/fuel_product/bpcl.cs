@@ -71,6 +71,8 @@ namespace MobileAPI_V2.Model.fuel_product
 
         public string? tran_date { get; set; }
         public string? trans_type { get;  set; }
+        public string? fuel_station_city { get; set; }
+        public string? fuel_station_location { get; set; }
     }
 }
 
