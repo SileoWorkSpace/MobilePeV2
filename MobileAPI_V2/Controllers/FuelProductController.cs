@@ -141,7 +141,8 @@ namespace MobileAPI_V2.Controllers
                                 tran_date = row["tran_date"]?.ToString(),
                                 trans_type = row["trans_type"]?.ToString(),
                                 fuel_station_location = row["fuel_station_location"]?.ToString(),
-                                fuel_station_city = row["fuel_station_city"]?.ToString()
+                                fuel_station_city = row["fuel_station_city"]?.ToString(),
+                                product_name = row["product_name"]?.ToString()
                             }).ToList();
                             bpcl_trnasaction_response.transaction_lst = lstbpcldata;
                             bpcl_trnasaction_response.total_record = long.TryParse(firstRow["total_record"]?.ToString(), out var total) ? total : 0;
